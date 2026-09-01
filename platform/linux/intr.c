@@ -1,7 +1,7 @@
+#include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#include <signal.h>
-#include <pthread.h>
 
 #include "platform.h"
 
@@ -25,8 +25,7 @@ static pthread_t tid;
 static pthread_barrier_t barrier;
 static sigset_t sigmask;
 
-int
-intr_register(unsigned int irq, intr_isr_t isr, int flags, void *arg)
+int intr_register(unsigned int irq, intr_isr_t isr, int flags, void *arg)
 {
     struct irq_entry *entry;
 
@@ -54,14 +53,9 @@ intr_register(unsigned int irq, intr_isr_t isr, int flags, void *arg)
     return 0;
 }
 
-int
-intr_raise(unsigned int irq)
-{
-    return pthread_kill(tid, (int)irq);
-}
+int intr_raise(unsigned int irq) { return pthread_kill(tid, (int)irq); }
 
-static void *
-intr_main(void *arg)
+static void *intr_main(void *arg)
 {
     int terminate = 0, sig, err;
     struct irq_entry *entry;
@@ -75,30 +69,29 @@ intr_main(void *arg)
             break;
         }
         switch (sig) {
-        case SIGHUP:
-            terminate = 1;
-            break;
-        default:
-            if (sig != INTR_IRQ_TIMER) {
-                debugf("IRQ <%d> occurred", sig);
-            }
-            for (entry = irqs; entry; entry = entry->next) {
-                if (entry->irq == (unsigned int)sig) {
-                    entry->isr(entry->irq, entry->arg);
-                    if (entry->flags ^ INTR_IRQ_SHARED) {
-                        break;
+            case SIGHUP:
+                terminate = 1;
+                break;
+            default:
+                if (sig != INTR_IRQ_TIMER) {
+                    debugf("IRQ <%d> occurred", sig);
+                }
+                for (entry = irqs; entry; entry = entry->next) {
+                    if (entry->irq == (unsigned int)sig) {
+                        entry->isr(entry->irq, entry->arg);
+                        if (entry->flags ^ INTR_IRQ_SHARED) {
+                            break;
+                        }
                     }
                 }
-            }
-            break;
+                break;
         }
     }
     infof("terminated");
     return NULL;
 }
 
-int
-intr_init(void)
+int intr_init(void)
 {
     tid = pthread_self();
     pthread_barrier_init(&barrier, NULL, 2);
@@ -107,8 +100,7 @@ intr_init(void)
     return 0;
 }
 
-int
-intr_run(void)
+int intr_run(void)
 {
     int err;
 
@@ -126,8 +118,7 @@ intr_run(void)
     return 0;
 }
 
-int
-intr_shutdown(void)
+int intr_shutdown(void)
 {
     if (pthread_equal(tid, pthread_self()) != 0) {
         /* Thread not created. */

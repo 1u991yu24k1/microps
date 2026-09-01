@@ -1,13 +1,13 @@
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #include <limits.h>
-#include <ctype.h>
-#include <time.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include "platform.h"
 
@@ -17,8 +17,7 @@
  * Logging
  */
 
-int
-lprintf(FILE *fp, int level, const char *file, int line, const char *func, const char *fmt, ...)
+int lprintf(FILE *fp, int level, const char *file, int line, const char *func, const char *fmt, ...)
 {
     struct timeval tv;
     struct tm tm;
@@ -38,28 +37,28 @@ lprintf(FILE *fp, int level, const char *file, int line, const char *func, const
     return n;
 }
 
-void
-hexdump(FILE *fp, const void *data, size_t size)
+void hexdump(FILE *fp, const void *data, size_t size)
 {
     unsigned char *src;
     int offset, index;
 
     flockfile(fp);
     src = (unsigned char *)data;
-    fprintf(fp, "+------+-------------------------------------------------+------------------+\n");
-    for(offset = 0; offset < (int)size; offset += 16) {
+    fprintf(fp, "+------+-------------------------------------------------+------"
+                "------------+\n");
+    for (offset = 0; offset < (int)size; offset += 16) {
         fprintf(fp, "| %04x | ", offset);
-        for(index = 0; index < 16; index++) {
-            if(offset + index < (int)size) {
+        for (index = 0; index < 16; index++) {
+            if (offset + index < (int)size) {
                 fprintf(fp, "%02x ", 0xff & src[offset + index]);
             } else {
                 fprintf(fp, "   ");
             }
         }
         fprintf(fp, "| ");
-        for(index = 0; index < 16; index++) {
-            if(offset + index < (int)size) {
-                if(isascii(src[offset + index]) && isprint(src[offset + index])) {
+        for (index = 0; index < 16; index++) {
+            if (offset + index < (int)size) {
+                if (isascii(src[offset + index]) && isprint(src[offset + index])) {
                     fprintf(fp, "%c", src[offset + index]);
                 } else {
                     fprintf(fp, ".");
@@ -70,7 +69,8 @@ hexdump(FILE *fp, const void *data, size_t size)
         }
         fprintf(fp, " |\n");
     }
-    fprintf(fp, "+------+-------------------------------------------------+------------------+\n");
+    fprintf(fp, "+------+-------------------------------------------------+------"
+                "------------+\n");
     funlockfile(fp);
 }
 
@@ -78,16 +78,14 @@ hexdump(FILE *fp, const void *data, size_t size)
  * Queue
  */
 
-void
-queue_init(struct queue *queue)
+void queue_init(struct queue *queue)
 {
     queue->head = NULL;
     queue->tail = NULL;
     queue->num = 0;
 }
 
-struct queue_entry *
-queue_push(struct queue *queue, struct queue_entry *entry)
+struct queue_entry *queue_push(struct queue *queue, struct queue_entry *entry)
 {
     if (!queue || !entry) {
         return NULL;
@@ -104,8 +102,7 @@ queue_push(struct queue *queue, struct queue_entry *entry)
     return entry;
 }
 
-struct queue_entry *
-queue_pop(struct queue *queue)
+struct queue_entry *queue_pop(struct queue *queue)
 {
     struct queue_entry *entry;
 
@@ -121,8 +118,7 @@ queue_pop(struct queue *queue)
     return entry;
 }
 
-struct queue_entry *
-queue_peek(struct queue *queue)
+struct queue_entry *queue_peek(struct queue *queue)
 {
     if (!queue || !queue->head) {
         return NULL;
@@ -130,8 +126,7 @@ queue_peek(struct queue *queue)
     return queue->head;
 }
 
-void
-queue_foreach(struct queue *queue, queue_func_t func, void *arg)
+void queue_foreach(struct queue *queue, queue_func_t func, void *arg)
 {
     struct queue_entry *entry;
 
@@ -156,27 +151,21 @@ queue_foreach(struct queue *queue, queue_func_t func, void *arg)
 
 static int endian;
 
-static int
-byteorder(void) {
+static int byteorder(void)
+{
     uint32_t x = 0x00000001;
 
     return *(uint8_t *)&x ? __LITTLE_ENDIAN : __BIG_ENDIAN;
 }
 
-static uint16_t
-byteswap16(uint16_t v)
-{
-    return (v & 0x00ff) << 8 | (v & 0xff00 ) >> 8;
-}
+static uint16_t byteswap16(uint16_t v) { return (v & 0x00ff) << 8 | (v & 0xff00) >> 8; }
 
-static uint32_t
-byteswap32(uint32_t v)
+static uint32_t byteswap32(uint32_t v)
 {
     return (v & 0x000000ff) << 24 | (v & 0x0000ff00) << 8 | (v & 0x00ff0000) >> 8 | (v & 0xff000000) >> 24;
 }
 
-uint16_t
-hton16(uint16_t h)
+uint16_t hton16(uint16_t h)
 {
     if (!endian) {
         endian = byteorder();
@@ -184,8 +173,7 @@ hton16(uint16_t h)
     return endian == __LITTLE_ENDIAN ? byteswap16(h) : h;
 }
 
-uint16_t
-ntoh16(uint16_t n)
+uint16_t ntoh16(uint16_t n)
 {
     if (!endian) {
         endian = byteorder();
@@ -193,8 +181,7 @@ ntoh16(uint16_t n)
     return endian == __LITTLE_ENDIAN ? byteswap16(n) : n;
 }
 
-uint32_t
-hton32(uint32_t h)
+uint32_t hton32(uint32_t h)
 {
     if (!endian) {
         endian = byteorder();
@@ -202,8 +189,7 @@ hton32(uint32_t h)
     return endian == __LITTLE_ENDIAN ? byteswap32(h) : h;
 }
 
-uint32_t
-ntoh32(uint32_t n)
+uint32_t ntoh32(uint32_t n)
 {
     if (!endian) {
         endian = byteorder();
@@ -215,8 +201,7 @@ ntoh32(uint32_t n)
  * Checksum
  */
 
-uint16_t
-cksum16(uint16_t *addr, uint16_t count, uint32_t init)
+uint16_t cksum16(uint16_t *addr, uint16_t count, uint32_t init)
 {
     uint32_t sum;
 

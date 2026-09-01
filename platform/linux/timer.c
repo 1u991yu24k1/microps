@@ -1,7 +1,7 @@
-#include <string.h>
 #include <errno.h>
-#include <time.h>
+#include <string.h>
 #include <sys/time.h>
+#include <time.h>
 
 #include "platform.h"
 
@@ -22,8 +22,7 @@ static timer_t timerid;
  */
 static struct timer *timers;
 
-int
-timer_register(struct timeval interval, void (*handler)(void))
+int timer_register(struct timeval interval, void (*handler)(void))
 {
     struct timer *timer;
 
@@ -41,8 +40,7 @@ timer_register(struct timeval interval, void (*handler)(void))
     return 0;
 }
 
-static void
-timer_irq_handler(unsigned int irq, void *arg)
+static void timer_irq_handler(unsigned int irq, void *arg)
 {
     struct timer *timer;
     struct timeval now, diff;
@@ -59,8 +57,7 @@ timer_irq_handler(unsigned int irq, void *arg)
     }
 }
 
-int
-timer_init(void)
+int timer_init(void)
 {
     struct sigevent sev;
 
@@ -74,24 +71,21 @@ timer_init(void)
     return intr_register(INTR_IRQ_TIMER, timer_irq_handler, 0, NULL);
 }
 
-int
-timer_run(void)
+int timer_run(void)
 {
-    const struct timespec ts = {0, 1000000}; /* 1ms */
-    struct itimerspec interval = {ts, ts};
+    const struct timespec ts = { 0, 1000000 }; /* 1ms */
+    struct itimerspec interval = { ts, ts };
 
     if (timer_settime(timerid, 0, &interval, NULL) == -1) {
         errorf("timer_settime: %s", strerror(errno));
         return -1;
     }
-    infof("interval={%d, %d}, initial={%d, %d}",
-        interval.it_interval.tv_sec, interval.it_interval.tv_nsec,
-        interval.it_value.tv_sec, interval.it_value.tv_nsec);
+    infof("interval={%d, %d}, initial={%d, %d}", interval.it_interval.tv_sec, interval.it_interval.tv_nsec,
+          interval.it_value.tv_sec, interval.it_value.tv_nsec);
     return 0;
 }
 
-int
-timer_shutdown(void)
+int timer_shutdown(void)
 {
     if (timer_delete(timerid) == -1) {
         errorf("timer_delete: %s", strerror(errno));

@@ -1,27 +1,29 @@
+// テストプログラム.
+#include <errno.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
-#include <errno.h>
 #include <unistd.h>
 
-#include "util.h"
 #include "net.h"
+#include "util.h"
 
 #include "test.h"
 
 static volatile sig_atomic_t terminate;
 
-static void
-on_signal(int signum)
+static void on_signal(int signum)
 {
     (void)signum;
     terminate = 1;
 }
 
-static int
-setup(void)
+// プロトコル・スタックの事前準備関数
+// 1. Signal Handler (SIGINT) のみハンドリング.
+// 2. 
+static int setup(void)
 {
-    struct sigaction sa = {0};
+    struct sigaction sa = { 0 };
 
     sa.sa_handler = on_signal;
     if (sigaction(SIGINT, &sa, NULL) == -1) {
@@ -40,8 +42,7 @@ setup(void)
     return 0;
 }
 
-static int
-cleanup(void)
+static int cleanup(void)
 {
     infof("cleanup protocol stack...");
     if (net_shutdown() == -1) {
@@ -51,14 +52,19 @@ cleanup(void)
     return 0;
 }
 
-static int
-app_main(void)
-{
-    return 0;
+// startupやdescruct処理を除いた main部分. 
+static int app_main(void) { 
+    debugf( "press Ctrl+C to terminate");
+    while (!terminate) {
+        sleep(1);
+    }
+    debugf("terminated");
+    return 0; 
 }
 
-int
-main(void)
+
+// テストコードのエントリポイント
+int main(void)
 {
     int ret;
 
