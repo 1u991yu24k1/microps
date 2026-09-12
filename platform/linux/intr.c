@@ -7,6 +7,8 @@
 
 #include "util.h"
 
+
+// 割り込みルーチンのエントリ. 
 struct irq_entry {
     struct irq_entry *next;
     unsigned int irq;

@@ -15,9 +15,7 @@ static struct net_device *devices; // Protocol Stackに登録しているネッ�
 // ネットワークデバイスのオブジェクト割当. 
 struct net_device *net_device_alloc(void) 
 {
-    struct net_device *dev;
-
-    dev = memory_alloc(sizeof(*dev));
+    struct net_device *dev = memory_alloc(sizeof(*dev));
     if (!dev) {
         errorf("memory_alloc()@%s", __func__);
         goto out;
@@ -35,7 +33,7 @@ out:
 int net_device_register(struct net_device *dev) 
 {
     static unsigned int index = 0;
-    dev->index++;
+    dev->index = index++;
     snprintf(dev->name, sizeof(dev->name), "net%d", dev->index);
     // 巡回リストにする. new_device -> old_device -> devices -> new_device -> ...
     dev->next = devices;
@@ -122,15 +120,10 @@ int net_run(void)
         errorf("platform_init()@net_run failure");
         return -1;
     }
-    /**
-     * ここでdevicesからすべての デバイスを open 状態にする.
-     * 書籍のコードでは, 
-     *  for (dev = devices; dev; dev = dev->next) { ... } となっているが, 
-     * net_device_registerの実装的に無限ループになる. そのため, 
-     *  for (dev = devices->next; dev != devices; dev = dev->next) { ... } に修正. 
-     */ 
-    for (dev = devices->next; dev != devices; dev = dev->next) {
+    for (dev = devices; dev; dev = dev->next) {
+        infof("dev: %p", dev);
         if (net_device_open(dev) == -1) {
+            errorf("net_device_open() failure");
             return -1;
         }
     }
@@ -153,7 +146,7 @@ int net_shutdown(void)
      *  for (dev = devices; dev; dev = dev->next) { ... } となっているが, 
      * net_device_registerの実装的に無限ループになる.
      */ 
-    for (dev = devices->next; dev != devices; dev = dev->next) {
+    for (dev = devices; dev; dev = dev->next) {
         if (net_device_close(dev) == -1) {
             return -1;
         }
