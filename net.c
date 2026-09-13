@@ -108,8 +108,6 @@ int net_input(uint16_t type, const uint8_t *data, size_t len, struct net_device 
     return 0;
 }
 
-
-
 /* ネットワークデバイスからデータを送信する関数
  *  Args:
  *      @dev : 送信に使用するネットワークデバイス.
@@ -120,7 +118,8 @@ int net_input(uint16_t type, const uint8_t *data, size_t len, struct net_device 
     Returns:
         0: 成功, -1: 失敗. 
  */ 
-int net_device_output(struct net_device *dev, uint16_t type, const uint8_t *data, size_t len, const void *dst)
+int net_device_output(struct net_device *dev, uint16_t type, 
+                    const uint8_t *data, size_t len, const void *dst)
 {
     debugf("dev=%s, type=%04x, len=%zu", dev->name, dev->type, len);
     debugdump(data, len);
@@ -129,7 +128,7 @@ int net_device_output(struct net_device *dev, uint16_t type, const uint8_t *data
         return -1;
     }
     // データサイズが MTU 内に収まっているか?
-    if (dev->mtu > len) {
+    if (dev->mtu < len) {
         errorf("too long, dev=%s, mtu=%u, len=%zu", dev->name, dev->mtu, len);
         return -1;
     }

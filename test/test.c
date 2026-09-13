@@ -8,31 +8,11 @@
 #include "net.h"
 #include "util.h"
 
+#include "driver/loopback.h"
+
 #include "test.h"
 
 #define DUMMY_NET_DEV_NAME "dummy_nic"
-
-/* Dummy 用 ネットワークデバイスを割当, ダミーパラメータをセットしてからプロトコルスタックに登録する.  */
-struct net_device *dummy_init(void) 
-{
-    struct net_device *dev = net_device_alloc();
-    if (!dev) {
-        errorf("net_device_alloc() failure");
-        return NULL;
-    }
-    dev->type = NET_DEVICE_TYPE_DUMMY;
-    dev->mtu = 128;
-    dev->hlen = 0; // Header長.
-    dev->alen = 0; // アドレス長.
-    infof("set dummy nic name");
-    strncpy(dev->name, DUMMY_NET_DEV_NAME, strlen(DUMMY_NET_DEV_NAME) + 1); 
-    if (net_device_register(dev) == -1) {
-        errorf("net_device_register() failure");
-        return NULL;
-    }
-    infof("success, dev=%s", dev->name);
-    return dev;
-}
 
 static volatile sig_atomic_t terminate;
 
@@ -62,9 +42,9 @@ static int setup(void)
         return -1;
     }
     
-    dev = dummy_init();
+    dev = loopback_init();
     if (!dev) {
-        errorf("dummy_init() failure");
+        errorf("loopback_init() failure");
         return -1;
     }
 
@@ -86,7 +66,8 @@ static int cleanup(void)
 }
 
 // startupやdescruct処理を除いた main部分. 
-static int app_main(void) { 
+static int app_main(void) 
+{ 
     debugf( "press Ctrl+C to terminate");
     while (!terminate) {
         int output_stat = net_device_output(dev, 0x0800, test_data, sizeof(test_data), NULL);
