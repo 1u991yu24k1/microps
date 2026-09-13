@@ -46,12 +46,23 @@ struct net_device {
     uint16_t alen;
     uint8_t  addr[NET_DEVICE_ADDR_LEN];
     uint8_t  broadcast[NET_DEVICE_ADDR_LEN];
+    struct net_device_ops *ops; // デバイス固有の処理を行う関数ポインタテーブル. 
+    void *priv;                 // デバイスドライバが内部で使用する private なデータを
+                                // ネットワークデバイスの object に紐付ける. 
+};
+
+// callback ハンドラ用構造体
+struct net_device_ops {
+    int (*open)(struct net_device *dev);   // ネットワークデバイスを起動するための関数
+    int (*close)(struct net_device *dev);  // ネットワークデバイスを停止するための関数. 
+    int (*output)(struct net_device *dev, uint16_t type, const uint8_t *data, size_t len, const void *dst);
 };
 
 // Export 関数
 extern struct net_device *net_device_alloc(void);
 extern int net_device_register(struct net_device *dev);
 extern int net_device_output(struct net_device *dev, uint16_t type, const uint8_t *data, size_t len, const void *dst);
+extern int net_input(uint16_t type, const uint8_t *data, size_t len, struct net_device *dev);
 
 extern int net_init(void);
 extern int net_run(void);
