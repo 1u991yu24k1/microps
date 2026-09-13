@@ -42,7 +42,7 @@ int net_device_register(struct net_device *dev)
     return 0;
 }
 
-// ネットワークデバイスを起動させる関数
+// プロトコルスタックに登録しているネットワークデバイスを起動させる関数
 // @dev: 新しく登録するネットワークデバイス. (caller側で非 NULL をチェックすること)
 // Returns:
 //  0: On Success
@@ -54,6 +54,14 @@ int net_device_open(struct net_device *dev)
         errorf("already opened, dev=%s", dev->name);
         return -1;
     }
+    // ops から open 関数を呼び出して, 対象デバイスの 固有 open 処理を実施.
+    // NULL なら デバイス固有の処理は不在としてスキップ
+    if (dev->ops->open) {
+        if (dev->ops->open(dev) == -1) {
+            errorf("failure dev=%s", dev->name);
+            return -1;
+        }
+    } 
     // flag を up にセット
     dev->flags |= NET_DEVICE_FLAG_UP;
     return 0;
@@ -71,9 +79,36 @@ int net_device_close(struct net_device *dev)
         errorf("not opened", dev->name);
         return -1;
     }
+    /* 固有の デバイス停止処理を実施. */
+    if (dev->ops->close) {
+        if (dev->ops->close(dev) == -1) {
+            errorf("failure, dev=%s", dev->name);
+            return -1;
+        }
+    }
     dev->flags &= ~NET_DEVICE_FLAG_UP;
     return 0;
 }
+
+/*  
+ * 一般的なネットワークデバイスからの入力は, 通常 割り込みにより処理が起動する.  
+ * Args:
+ *  @type: 入力パケットのプロトコル識別
+ *  @data: 入力パケットのバイト列
+ *  @len:  入力パケットのバイト数.
+ *  @dev:  入力デバイスへのポインタ. 
+ * 
+ * Returns:
+ *   0: 成功, 失敗. 
+*/
+int net_input(uint16_t type, const uint8_t *data, size_t len, struct net_device *dev)
+{
+    debugf("dev=%s, type=0x%04x, len=%zu", dev->name, type, len);
+    debugdump(data, len);
+    return 0;
+}
+
+
 
 /* ネットワークデバイスからデータを送信する関数
  *  Args:
@@ -93,8 +128,21 @@ int net_device_output(struct net_device *dev, uint16_t type, const uint8_t *data
         errorf("not opened, dev=%s", dev->name);
         return -1;
     }
-    if (dev->mtu < len) {
-        
+    // データサイズが MTU 内に収まっているか?
+    if (dev->mtu > len) {
+        errorf("too long, dev=%s, mtu=%u, len=%zu", dev->name, dev->mtu, len);
+        return -1;
+    }
+    // デバイス側に出力用 callback が登録されているかチェック
+    if (!dev->ops->output) {
+        errorf("failure, dev=%s, len=%zu", dev->name, len);
+        return -1;
+    }
+
+    // 実際にデバイスにデータを流す. 
+    if (dev->ops->output(dev, type, data, len, dst) == -1) {
+        errorf("failure, dev=%s, len=%zu", dev->name, len);
+        return -1;
     }
     return 0;
 }
