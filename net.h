@@ -24,6 +24,10 @@
 #define NET_DEVICE_IS_UP(x) ((x)->flags & NET_DEVICE_FLAG_UP)
 #define NET_DEVICE_STATE(x) (NET_DEVICE_IS_UP(x) ? "UP": "DOWN")
 
+#define NET_PROTOCOL_TYPE_IP   0x0800
+#define NET_PROTOCOL_TYPE_ARP  0x0806
+#define NET_PROTOCOL_TYPE_IPV6 0x86dd
+
 /** 
  * ネットワークデバイスを管理するための構造体. 
  * 以下の情報を保持する.
@@ -51,6 +55,8 @@ struct net_device {
                                 // ネットワークデバイスの object に紐付ける. 
 };
 
+typedef void (*net_protocol_handler_t) (const uint8_t *data, size_t len, struct net_device *dev);
+
 // callback ハンドラ用構造体
 struct net_device_ops {
     int (*open)(struct net_device *dev);   // ネットワークデバイスを起動するための関数
@@ -62,6 +68,7 @@ struct net_device_ops {
 extern struct net_device *net_device_alloc(void);
 extern int net_device_register(struct net_device *dev);
 extern int net_device_output(struct net_device *dev, uint16_t type, const uint8_t *data, size_t len, const void *dst);
+extern int net_protocol_register(uint16_t type, net_protocol_handler_t handler);
 extern int net_input(uint16_t type, const uint8_t *data, size_t len, struct net_device *dev);
 
 extern int net_init(void);

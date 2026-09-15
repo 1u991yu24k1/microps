@@ -9,8 +9,20 @@
 #include "platform.h"
 #include "util.h"
 #include "net.h"
+#include "ip.h"
+
+/*  将来的に IPv4 以外のプロトコルにも拡張できるように,  
+    各プロトコルの処理をプラグインの形で, 実装する.
+    リンクリストで Protocol を走査する.  
+*/
+struct net_protocol {
+    struct net_protocol *next;
+    uint16_t type;
+    net_protocol_handler_t handler;
+};
 
 static struct net_device *devices; // Protocol Stackに登録しているネットワークデバイスのリスト
+static struct net_protocol *protocols;
 
 // ネットワークデバイスのオブジェクト割当. 
 struct net_device *net_device_alloc(void) 
@@ -108,6 +120,33 @@ int net_input(uint16_t type, const uint8_t *data, size_t len, struct net_device 
     return 0;
 }
 
+
+/* Protocol Stack のハンドラ登録. 
+ * @type: プロトコル種別.
+ * @handler: そのプロトコルのハンドラ.
+*/
+int net_protocol_register(uint16_t type, net_protocol_handler_t handler) 
+{
+    struct net_protocol *proto;
+    for (proto = protocols; proto; proto = proto->next) {
+        if (proto->type == type) {
+            errorf("already registerd, type=0x%04x", proto->type);
+            return -1;
+        }
+    }
+    proto = memory_alloc(sizeof(*proto));
+    if (!proto) {
+        errorf("memory_alloc() failure");
+        return -1;
+    }
+    proto->type = type;
+    proto->handler = handler;
+    proto->next = protocols;
+    protocols = proto;
+    infof("success, type=0x%04x", type);
+    return 0;   
+}
+
 /* ネットワークデバイスからデータを送信する関数
  *  Args:
  *      @dev : 送信に使用するネットワークデバイス.
@@ -152,6 +191,10 @@ int net_init(void)
     infof("initialize ...");
     if (platform_init() == -1) {
         errorf("platform_init()@net_init failure");
+        return -1;
+    }
+    if (ip_init() == -1) {
+        errorf("ip_init() failure");
         return -1;
     }
     infof("net_init: success...");
